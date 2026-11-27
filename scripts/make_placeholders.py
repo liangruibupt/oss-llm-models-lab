@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""Generate docs/results/<slug>.md placeholders from docs/results/TEMPLATE.md.
+
+Launch commands are copied verbatim from docs/practice/*.md (section + instance header).
+Re-run after editing TEMPLATE.md or practice docs; it never overwrites a filled-in page
+(one whose status line no longer says 待补充).
+"""
+import os
+import re
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def read(p):
+    return open(os.path.join(ROOT, p), encoding="utf-8").read()
+
+
+def block(doc, section_prefix, instance):
+    """Return '**header**\n\n```bash ...```' for the first command under section/instance."""
+    t = read(doc)
+    level = "### " if doc.endswith(("sglang.md", "vllm.md")) else "## "
+    secs = re.split(r"\n(?=" + level + ")", t)
+    for s in secs:
+        if not s.startswith(level + section_prefix):
+            continue
+        if instance is None:
+            m = re.search(r"```bash\n.*?```", s, re.S)
+            return m.group(0) if m else None
+        m = re.search(r"(\*\*" + re.escape(instance) + r"[^\n]*\n\n```bash\n.*?```)", s, re.S)
+        if m:
+            return m.group(1)
+    raise SystemExit(f"command not found: {doc} / {section_prefix} / {instance}")
+
+
+def tables(frameworks):
+    head = ("| 负载 | 并发 | TTFT p50 (ms) | TTFT p99 (ms) | TPOT p50 (ms) | TPOT p99 (ms) | 输出 tok/s | 请求/s |\n"
+            "|---|---:|---:|---:|---:|---:|---:|---:|\n")
+    out = []
+    for fw in frameworks:
+        rows = "".join(f"| {w} | {c} | 待补充 | 待补充 | 待补充 | 待补充 | 待补充 | 待补充 |\n"
+                       for w in ("W1 1024/256", "W2 8192/1024") for c in (1, 8, 32, 64))
+        out.append(f"### {fw}\n\n{head}{rows}")
+    return "\n".join(out)
+
+
+P5, P5EN, B200, B300 = "p5.48xlarge", "p5en.48xlarge", "p6-b200.48xlarge", "p6-b300.48xlarge"
+SG, VL = "docs/practice/sglang.md", "docs/practice/vllm.md"
+HF = "https://huggingface.co/"
+
+ROWS = [
+    dict(slug="gpt-oss-120b_p5", model="gpt-oss-120b", hf="openai/gpt-oss-120b", inst=P5,
+         fws=["vLLM", "SGLang"], prec="MXFP4（原生权重）", est="3 h · $165.12",
+         cmds=[("vLLM", VL, "`openai/gpt-oss-120b`", P5),
+               ("SGLang（cookbook 通用命令，未区分机型）", SG, "gpt-oss-120b", None)]),
+    dict(slug="qwen3-omni-30b-a3b_p5", model="Qwen3-Omni-30B-A3B-Instruct", hf="Qwen/Qwen3-Omni-30B-A3B-Instruct",
+         inst=P5, fws=["vLLM-Omni（文本输出）"], prec="BF16", est="2 h · $110.08",
+         cmds=[("vLLM-Omni", "docs/practice/vllm-omni.md", "安装与启动", None)],
+         note="压测时加 `--extra-body '{\"modalities\": [\"text\"]}'`，端口 8091。"),
+    dict(slug="glm-5.3-flash_p5", model="GLM-5.3-Flash", hf="zai-org/GLM-5.3-Flash", inst=P5,
+         fws=["vLLM", "SGLang"], prec="FP8（原生权重）", est="4 h · $220.16",
+         cmds=[("vLLM", VL, "`zai-org/GLM-5.3-Flash`", P5), ("SGLang", SG, "GLM-5.3-Flash", P5)]),
+    dict(slug="glm-5.3-flash_trn2", model="GLM-5.3-Flash", hf="zai-org/GLM-5.3-Flash", inst="trn2.48xlarge",
+         fws=["TrnRT"], prec="FP8", est="编译 m7i.16xlarge 8 h $25.80 + trn2 8 h Capacity Block $289.66",
+         cmds=[("TrnRT 服务（编译缓存步骤见 practice/trnrt.md §2）", "docs/practice/trnrt.md", "3. 在 trn2.48xlarge 上服务", None)],
+         served="glm"),
+    dict(slug="deepseek-v4.1-flash_p5en", model="DeepSeek-V4.1-Flash-1017", hf="deepseek-ai/DeepSeek-V4.1-Flash-1017",
+         inst=P5EN, fws=["vLLM", "SGLang"], prec="原生 FP4/FP8 混合", est="4 h · $253.18",
+         cmds=[("vLLM", VL, "`deepseek-ai/DeepSeek-V4.1-Flash`", "p5en.48xlarge"),
+               ("SGLang", SG, "DeepSeek-V4.1-Flash", "p5en.48xlarge")]),
+    dict(slug="deepseek-v4.1-flash_p6-b200_deepinfer", model="DeepSeek-V4.1-Flash-1017",
+         hf="deepseek-ai/DeepSeek-V4.1-Flash-1017", inst=B200, fws=["DeepInfer"], prec="原生 FP4/FP8 混合",
+         est="4 h · $455.73", cmds=[("DeepInfer 离线基准", "docs/practice/deepinfer.md", "基准", None)],
+         deepinfer=True),
+    dict(slug="glm-5.3_p5en", model="GLM-5.3", hf="zai-org/GLM-5.3", inst=P5EN, fws=["vLLM", "SGLang"],
+         prec="FP8（原生权重）", est="4 h · $253.18",
+         cmds=[("vLLM", VL, "`zai-org/GLM-5.3`", "p5en.48xlarge"), ("SGLang", SG, "GLM-5.3（", "p5en.48xlarge")]),
+    dict(slug="deepseek-v4-pro-0813_p5en", model="DeepSeek-V4-Pro-0813", hf="deepseek-ai/DeepSeek-V4-Pro-0813",
+         inst=P5EN, fws=["vLLM", "SGLang"], prec="原生 FP4/FP8 混合", est="5 h · $316.48",
+         cmds=[("vLLM", VL, "`deepseek-ai/DeepSeek-V4-Pro`", "p5en.48xlarge"),
+               ("SGLang", SG, "DeepSeek-V4-Pro-0813（", "p5en.48xlarge")]),
+    dict(slug="minimax-m3.1-flash_p5en", model="MiniMax-M3.1-Flash", hf="MiniMaxAI/MiniMax-M3.1-Flash", inst=P5EN,
+         fws=["SGLang"], prec="原生权重", est="3 h · $189.89",
+         cmds=[("SGLang", SG, "MiniMax-M3.1-Flash", "p5en.48xlarge")]),
+    dict(slug="minimax-m3.1-flash_p6-b300", model="MiniMax-M3.1-Flash", hf="MiniMaxAI/MiniMax-M3.1-Flash", inst=B300,
+         fws=["vLLM", "SGLang"], prec="原生权重", est="与 Mistral-Large-4 同机，合计 6 h · $854.50",
+         cmds=[("vLLM", VL, "`MiniMaxAI/MiniMax-M3.1-Flash`", B300), ("SGLang", SG, "MiniMax-M3.1-Flash", B300)]),
+    dict(slug="mistral-large-4_p6-b300", model="Mistral-Large-4-1T-A52B", hf="mistralai/Mistral-Large-4-1T-A52B",
+         inst=B300, fws=["vLLM", "SGLang"], prec="vLLM 用 NVFP4 checkpoint，SGLang 用 FP8", est="与 MiniMax-M3.1-Flash 同机，合计 6 h · $854.50",
+         cmds=[("vLLM", VL, "`mistralai/Mistral-Large-4-1T-A52B`", B300), ("SGLang", SG, "Mistral-Large-4", B300)]),
+    dict(slug="qwen3.8-2.4t-a95b_p6-b300", model="Qwen3.8-2.4T-A95B（NVFP4）", hf="RadixArk/Qwen3.8-2.4T-A95B-NVFP4",
+         inst=B300, fws=["SGLang"], prec="NVFP4", est="4 h · $569.66",
+         cmds=[("SGLang", SG, "Qwen3.8-2.4T-NVFP4", B300)]),
+]
+
+
+def main():
+    tpl = read("docs/results/TEMPLATE.md")
+    for r in ROWS:
+        path = os.path.join(ROOT, "docs/results", r["slug"] + ".md")
+        if os.path.exists(path) and "状态：⏳ 待补充" not in open(path, encoding="utf-8").read():
+            print("skip filled", path)
+            continue
+        parts = []
+        for title, doc, sec, inst in r["cmds"]:
+            b = block(doc, sec, inst)
+            parts.append(f"**{title}**（来源 [`{os.path.relpath(doc, 'docs/results')}`](../{os.path.relpath(doc, 'docs')})）\n\n{b}")
+        if r.get("note"):
+            parts.append(r["note"])
+        tables_md = tables(r["fws"])
+        if r.get("deepinfer"):
+            tables_md = ("DeepInfer 没有 HTTP 服务，`bench/llm_bench.py` 不适用；用 `examples/benchmark.py` 的三项指标：\n\n"
+                         "| 配置 | prefill 吞吐 (tok/s/GPU) | decode avg_SPS | decode 吞吐 (tok/s/GPU，全接受口径) |\n"
+                         "|---|---:|---:|---:|\n| 默认（EP8，nextn=5） | 待补充 | 待补充 | 待补充 |\n"
+                         "| `DEEPINFER_USE_NEXTN_DECODE=0` | 待补充 | 待补充 | 待补充 |\n")
+        out = (tpl.replace("{{MODEL}}", r["model"]).replace("{{INSTANCE}}", r["inst"])
+               .replace("{{MODEL_LINK}}", f"[{r['hf']}]({HF}{r['hf']})").replace("{{FRAMEWORKS}}", " + ".join(r["fws"]))
+               .replace("{{PRECISION}}", r["prec"]).replace("{{EST}}", r["est"]).replace("{{SLUG}}", r["slug"])
+               .replace("{{SERVED}}", r.get("served", r["hf"])).replace("{{COMMANDS}}", "\n\n".join(parts))
+               .replace("{{TABLES}}", tables_md))
+        if r.get("deepinfer"):
+            out = re.sub(r"## 压测命令\n.*?(?=## 结果)", "## 压测命令\n\n见上方 DeepInfer 离线基准命令，加 `--result_jsonl results/"
+                         + r["slug"] + "/deepinfer.jsonl`。\n\n", out, flags=re.S)
+        open(path, "w", encoding="utf-8").write(out)
+        os.makedirs(os.path.join(ROOT, "results", r["slug"]), exist_ok=True)
+        open(os.path.join(ROOT, "results", r["slug"], ".gitkeep"), "w").close()
+        print("wrote", path)
+
+
+if __name__ == "__main__":
+    main()
