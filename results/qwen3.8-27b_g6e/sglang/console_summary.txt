@@ -1,0 +1,12 @@
+# SGLang 0.5.23 / g6e.xlarge (1x L40S 48GB) / Qwen3.8-27B-FP8
+# Per-level stderr summary lines printed by bench/llm_bench.py (the full JSON/MD were lost, see README.md here).
+# W1 1024/256 (started after server ready 04:58:14 UTC, finished 05:09:18)
+[c=1] ok=16/16 out_tok/s=18.4 ttft_p50=250.6ms tpot_p50=53.57ms
+[c=8] ok=32/32 out_tok/s=136.5 ttft_p50=2118.1ms tpot_p50=49.87ms
+[c=32] ok=128/128 out_tok/s=327.5 ttft_p50=6652.7ms tpot_p50=72.75ms
+[c=64] ok=256/256 out_tok/s=332.9 ttft_p50=29679.7ms tpot_p50=69.67ms
+# W2 8192/1024 (finished 05:32:22)
+[c=1] ok=8/8 out_tok/s=17.8 ttft_p50=2158.2ms tpot_p50=54.02ms
+[c=8] ok=8/8 out_tok/s=116.1 ttft_p50=12141.0ms tpot_p50=57.08ms
+[c=32] ok=32/32 out_tok/s=169.8 ttft_p50=38368.1ms tpot_p50=73.36ms
+[c=64] ok=64/64 out_tok/s=170.1 ttft_p50=136222.1ms tpot_p50=74.06ms

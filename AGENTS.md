@@ -25,6 +25,15 @@
 - 实测前**必须有成本审批**；按 [`docs/BENCH_PLAN.md`](docs/BENCH_PLAN.md) 的组合与命令执行，结果写入 `results/<model>_<framework>_<instance>.{json,md}`，再更新 PERF 文档（标为「本仓库实测」）。
 - 启动命令严格来自 `docs/practice/`；有任何调参都要在结果里写明。
 
+## 实测运行的铁律（2026-11-27 g6e 运行踩过的坑）
+- **先取回、核对，再终止**：`scp` 取回结果并在本地 `ls`/读 JSON 确认之后，再**单独一步**跑 `scripts/teardown.py`。两者绝不能同时发起；本地已有的旧副本在新副本核对完之前不要删。那次运行就因为两者并发、实例中途被终止，丢了全部原始 JSON。
+- **不要覆盖正在运行的脚本**：bash 是边读边执行的，用 `scp` 覆盖一个正在跑的 `.sh` 会让旧进程执行错乱的命令。改脚本就换个新文件名。
+- **按 PID 杀进程**：`pgrep -f <模式>` / `pkill -f` 会匹配到发出命令的那个 ssh shell 自己，把自己杀掉。记下 PID，用 `kill <PID>`。
+- **后台任务单独一条命令启动**（`ssh -f ... 'nohup bash x.sh > x.out 2>&1 < /dev/null &'`），状态另起命令轮询。
+- **HF 离线模式**：`snapshot_download(revision=<sha>)` 不写 `refs/main`；服务端带 `HF_HUB_OFFLINE=1` 时要手动写，见 [`scripts/box/setup_qwen27b.sh`](scripts/box/setup_qwen27b.sh)。
+- **开机用 [`scripts/launch.py`](scripts/launch.py)**：自有 Name tag / key / SG，key 放 `~/.oss-llm-bench/`（不放 scratch）；[`scripts/teardown.py`](scripts/teardown.py) 只终止 Name tag 匹配的实例。绝不停止或终止别的会话的实例。实例上另设 `sudo shutdown -h +N` 兜底（`InstanceInitiatedShutdownBehavior=terminate`）。
+- AMI 用 Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 24.04)：vLLM / SGLang 的官方镜像都是 CUDA 13.0 构建，需要新驱动。
+
 ## git 规则
 - 不能直接 push 到 `main`（受保护）。在 feature 分支上工作：先 `git commit`，再单独一行 `git push origin <feature-branch>`，再 `gh pr create --base main`。
 - 仓库工作副本放稳定路径 `/home/ubuntu/workplace/oss-llm-models-lab`，只 `git pull`，不要每次重新 clone 到 scratch。

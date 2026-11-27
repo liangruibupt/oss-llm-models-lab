@@ -1,6 +1,32 @@
 # 🧪 实测计划（待成本审批，尚未执行）
 
-> 本期**没有启动任何 GPU / Trainium 实例**。下面是建议的实测组合、预估时长与按需成本，需单独审批后再执行。价格读取于 2026-11-27。
+> 下面是建议的实测组合、预估时长与按需成本，**每一行需单独审批后再执行**。价格读取于 2026-11-27。目前只有 Qwen3.8-27B-FP8 · g6e.xlarge 一行已实测（ap-northeast-1，见 [📊 实测结果](#-实测结果)）。
+
+## 📊 实测结果
+
+| 优先级 | 模型 | 框架 | 实例 | 状态 |
+|---|---|---|---|---|
+| P0 | gpt-oss-120b | vLLM + SGLang | `p5.48xlarge` | ⏳ [待补充](results/gpt-oss-120b_p5.md) |
+| P0 | Qwen3.8-27B-FP8 | vLLM + SGLang | `g6e.xlarge` | ✅ [已实测](results/qwen3.8-27b_g6e.md)（ap-northeast-1） |
+| P0 | Qwen3-Omni-30B-A3B-Instruct | vLLM-Omni | `p5.48xlarge` | ⏳ [待补充](results/qwen3-omni-30b-a3b_p5.md) |
+| P0 | GLM-5.3-Flash | vLLM + SGLang | `p5.48xlarge` | ⏳ [待补充](results/glm-5.3-flash_p5.md) |
+| P0 | GLM-5.3-Flash | TrnRT | `m7i.16xlarge`（编译）+ `trn2.48xlarge` | ⏳ [待补充](results/glm-5.3-flash_trn2.md) |
+| P0 | DeepSeek-V4.1-Flash-1017 | vLLM + SGLang | `p5en.48xlarge` | ⏳ [待补充](results/deepseek-v4.1-flash_p5en.md) |
+| P1 | DeepSeek-V4.1-Flash-1017 | DeepInfer | `p6-b200.48xlarge` | ⏳ [待补充](results/deepseek-v4.1-flash_p6-b200_deepinfer.md) |
+| P1 | GLM-5.3 | vLLM + SGLang | `p5en.48xlarge` | ⏳ [待补充](results/glm-5.3_p5en.md) |
+| P1 | DeepSeek-V4-Pro-0813 | vLLM + SGLang | `p5en.48xlarge` | ⏳ [待补充](results/deepseek-v4-pro-0813_p5en.md) |
+| P1 | MiniMax-M3.1-Flash | SGLang | `p5en.48xlarge` | ⏳ [待补充](results/minimax-m3.1-flash_p5en.md) |
+| P2 | MiniMax-M3.1-Flash | vLLM + SGLang | `p6-b300.48xlarge` | ⏳ [待补充](results/minimax-m3.1-flash_p6-b300.md) |
+| P2 | Mistral-Large-4-1T-A52B | vLLM + SGLang | `p6-b300.48xlarge` | ⏳ [待补充](results/mistral-large-4_p6-b300.md) |
+| P2 | Qwen3.8-2.4T-A95B（NVFP4） | SGLang | `p6-b300.48xlarge` | ⏳ [待补充](results/qwen3.8-2.4t-a95b_p6-b300.md) |
+
+### 如何补充你的结果
+
+1. 打开该行的占位文档（`docs/results/<model>_<instance>.md`，模板 [`results/TEMPLATE.md`](results/TEMPLATE.md)），按其中的启动命令起服务（有改动写明）。
+2. 在同一台实例上跑文档里的两条 `bench/llm_bench.py` 命令（W1 1024/256、W2 8192/1024，并发 1/8/32/64），`--out` 指向 `results/<model>_<instance>/<框架>_w1_1024_256` 等，生成 `.json` + `.md`。
+3. 把 JSON/MD 提交到 `results/<model>_<instance>/`，把数字填进占位文档的结果表，补齐版本、日期、运行者、实际成本，并把状态行改为 ✅。
+4. 把本表（[README](../README.md#-实测结果) 与本文件各一份）对应行改为 `✅ 已实测`，走 feature 分支 + PR。
+5. 跑完立刻终止实例：`python scripts/teardown.py --name <Name tag>`，再用 `aws ec2 describe-instances` 确认 `terminated`。
 
 ## 测试方法（所有 OpenAI 兼容框架统一）
 
@@ -21,7 +47,7 @@
 | 优先级 | 模型 | 框架 | 实例 | 预估小时 | 单价 | 预估成本 |
 |---|---|---|---|---:|---:|---:|
 | P0 | gpt-oss-120b | vLLM + SGLang（同一台） | `p5.48xlarge` ×1 | 3 | $55.04/h | $165.12 |
-| P0 | Qwen3.8-27B-FP8 | vLLM + SGLang（同一台；**非官方硬件**，可能要调低 `--max-model-len`） | `g6e.xlarge` ×1（1×L40S 48GB） | 3 | $1.861/h | $5.58 |
+| P0 | Qwen3.8-27B-FP8 | vLLM + SGLang（同一台；**非官方硬件**；✅ 已实测，ap-northeast-1 / g6e.xlarge，见 [结果](results/qwen3.8-27b_g6e.md)） | `g6e.xlarge` ×1（1×L40S 48GB） | 3 | $1.861/h | $5.58 |
 | P0 | Qwen3-Omni-30B-A3B-Instruct | vLLM-Omni（默认 2 卡配置，文本输出） | `p5.48xlarge` ×1 | 2 | $55.04/h | $110.08 |
 | P0 | GLM-5.3-Flash | vLLM + SGLang（同一台，H100 配置均为 verified） | `p5.48xlarge` ×1 | 4 | $55.04/h | $220.16 |
 | P0 | GLM-5.3-Flash | TrnRT：构建编译缓存（CPU，「数小时」） | `m7i.16xlarge` ×1 | 8 | $3.2256/h | $25.80 |

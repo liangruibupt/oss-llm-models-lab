@@ -8,7 +8,7 @@
 2. 在 AWS 上**怎么跑**（官方启动命令 + 示例请求）？
 3. **性能**如何？先汇总已公布的数据，再用统一的压测工具实测。
 
-> ⚠ **本期范围**：调研 + 文档 + 压测工具，**没有启动任何 GPU / Trainium 实例**，文中所有性能数字都来自公开发布的资料。实测计划和成本见 [`docs/BENCH_PLAN.md`](docs/BENCH_PLAN.md)，需单独审批。所有支持状态 **checked 2026-11-27**。
+> ⚠ **范围**：调研 + 文档 + 压测工具；目前只实测了 **Qwen3.8-27B-FP8 on g6e.xlarge**（vLLM vs SGLang，见 [📊 实测结果](#-实测结果)），其余性能数字都来自公开资料。其他行的实测计划和成本见 [`docs/BENCH_PLAN.md`](docs/BENCH_PLAN.md)，需单独审批。所有支持状态 **checked 2026-11-27**。
 
 ---
 
@@ -44,6 +44,34 @@
 
 一句话：**SGLang 和 vLLM 覆盖了全部 10 个文本 LLM**；TrnRT 只支持 GLM-5.3-Flash，DeepInfer 只支持 DeepSeek-V4.1-Flash；要 Qwen3-Omni 的语音输出只能用 vLLM-Omni。
 
+## 📊 实测结果
+
+本仓库在 AWS 上实测的组合与进度。实测预算按行单独审批，计划与成本见 [`docs/BENCH_PLAN.md`](docs/BENCH_PLAN.md)。
+
+| 优先级 | 模型 | 框架 | 实例 | 状态 |
+|---|---|---|---|---|
+| P0 | gpt-oss-120b | vLLM + SGLang | `p5.48xlarge` | ⏳ [待补充](docs/results/gpt-oss-120b_p5.md) |
+| P0 | Qwen3.8-27B-FP8 | vLLM + SGLang | `g6e.xlarge` | ✅ [已实测](docs/results/qwen3.8-27b_g6e.md)（ap-northeast-1） |
+| P0 | Qwen3-Omni-30B-A3B-Instruct | vLLM-Omni | `p5.48xlarge` | ⏳ [待补充](docs/results/qwen3-omni-30b-a3b_p5.md) |
+| P0 | GLM-5.3-Flash | vLLM + SGLang | `p5.48xlarge` | ⏳ [待补充](docs/results/glm-5.3-flash_p5.md) |
+| P0 | GLM-5.3-Flash | TrnRT | `m7i.16xlarge`（编译）+ `trn2.48xlarge` | ⏳ [待补充](docs/results/glm-5.3-flash_trn2.md) |
+| P0 | DeepSeek-V4.1-Flash-1017 | vLLM + SGLang | `p5en.48xlarge` | ⏳ [待补充](docs/results/deepseek-v4.1-flash_p5en.md) |
+| P1 | DeepSeek-V4.1-Flash-1017 | DeepInfer | `p6-b200.48xlarge` | ⏳ [待补充](docs/results/deepseek-v4.1-flash_p6-b200_deepinfer.md) |
+| P1 | GLM-5.3 | vLLM + SGLang | `p5en.48xlarge` | ⏳ [待补充](docs/results/glm-5.3_p5en.md) |
+| P1 | DeepSeek-V4-Pro-0813 | vLLM + SGLang | `p5en.48xlarge` | ⏳ [待补充](docs/results/deepseek-v4-pro-0813_p5en.md) |
+| P1 | MiniMax-M3.1-Flash | SGLang | `p5en.48xlarge` | ⏳ [待补充](docs/results/minimax-m3.1-flash_p5en.md) |
+| P2 | MiniMax-M3.1-Flash | vLLM + SGLang | `p6-b300.48xlarge` | ⏳ [待补充](docs/results/minimax-m3.1-flash_p6-b300.md) |
+| P2 | Mistral-Large-4-1T-A52B | vLLM + SGLang | `p6-b300.48xlarge` | ⏳ [待补充](docs/results/mistral-large-4_p6-b300.md) |
+| P2 | Qwen3.8-2.4T-A95B（NVFP4） | SGLang | `p6-b300.48xlarge` | ⏳ [待补充](docs/results/qwen3.8-2.4t-a95b_p6-b300.md) |
+
+### 如何补充你的结果
+
+1. 打开该行的占位文档（`docs/results/<model>_<instance>.md`，模板 [`docs/results/TEMPLATE.md`](docs/results/TEMPLATE.md)），按其中的启动命令起服务（有改动写明）。
+2. 在同一台实例上跑文档里的两条 `bench/llm_bench.py` 命令（W1 1024/256、W2 8192/1024，并发 1/8/32/64），`--out` 指向 `results/<model>_<instance>/<框架>_w1_1024_256` 等，生成 `.json` + `.md`。
+3. 把 JSON/MD 提交到 `results/<model>_<instance>/`，把数字填进占位文档的结果表，补齐版本、日期、运行者、实际成本，并把状态行改为 ✅。
+4. 把本表（README 与 [`docs/BENCH_PLAN.md`](docs/BENCH_PLAN.md) 各一份）对应行改为 `✅ 已实测`，走 feature 分支 + PR。
+5. 跑完立刻终止实例：`python scripts/teardown.py --name <Name tag>`，再用 `aws ec2 describe-instances` 确认 `terminated`。
+
 ## 📚 文档索引
 
 | 文档 | 内容 |
@@ -56,7 +84,9 @@
 | [`docs/practice/vllm-omni.md`](docs/practice/vllm-omni.md) | vLLM-Omni：Qwen3-Omni 三 stage 部署与文本/语音输出 |
 | [`docs/practice/deepinfer.md`](docs/practice/deepinfer.md) | DeepInfer：构建、离线推理与自带基准 |
 | [`docs/PERF_PUBLISHED.md`](docs/PERF_PUBLISHED.md) | 已公布的性能数据，逐条标注官方/第三方、硬件、精度、负载 |
-| [`docs/BENCH_PLAN.md`](docs/BENCH_PLAN.md) | 建议的实测组合、预估时长与按需成本（待审批） |
+| [`docs/BENCH_PLAN.md`](docs/BENCH_PLAN.md) | 建议的实测组合、预估时长与按需成本（逐行审批） |
+| [`docs/results/`](docs/results/) | 实测结果：[Qwen3.8-27B · g6e.xlarge](docs/results/qwen3.8-27b_g6e.md)（✅）及其余各行的占位文档（⏳，[模板](docs/results/TEMPLATE.md)） |
+| [`scripts/`](scripts/) | `launch.py` / `teardown.py`（boto3，自有 Name tag、key、SG）与实例上运行的 `box/*.sh` |
 | [`bench/README.md`](bench/README.md) | 框架无关的 OpenAI 兼容压测工具（TTFT / TPOT / ITL / 吞吐） |
 | [`AGENTS.md`](AGENTS.md) | 给后续 agent 的首读指引 |
 
@@ -84,6 +114,8 @@ oss-llm-models-lab/
 ├── LICENSE                   # MIT（仅代码与文档）
 ├── .github/workflows/
 │   └── gitleaks.yml          # 密钥扫描
+├── scripts/                  # launch.py / teardown.py / make_placeholders.py / box/*.sh
+├── results/                  # 实测原始 JSON + markdown（每行一个目录）
 ├── bench/
 │   ├── README.md             # 压测工具说明
 │   ├── llm_bench.py          # 压测主程序（标准库，无依赖）
@@ -95,6 +127,7 @@ oss-llm-models-lab/
     ├── SUPPORT_MATRIX.md
     ├── PERF_PUBLISHED.md
     ├── BENCH_PLAN.md
+    ├── results/              # 实测结果文档 + TEMPLATE.md + 占位文档
     └── practice/
         ├── sglang.md
         ├── vllm.md

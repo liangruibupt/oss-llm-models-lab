@@ -1,0 +1,11 @@
+# Captured on the box by scripts/box/setup_qwen27b.sh (transcribed; the original file was lost with the instance)
+region/az: ap-northeast-1 / ap-northeast-1c, instance i-082a2f7256ae3c051 (g6e.xlarge)
+AMI: ami-01431a4029b0c29de  Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 24.04) 20261120
+GPU: NVIDIA L40S, driver 620.70.06, 46068 MiB, CUDA UMD 13.5
+OS: Ubuntu 24.04.5 LTS, kernel 7.0.0-1018-aws, Docker 29.10.0
+vLLM image: vllm/vllm-openai:qwen38 @ sha256:4a2f33a884222f7049b983263ad9976f89452bb81affecf5b67d89ad35c1bc31
+  vllm 0.1.dev19754+g3a0914114, torch 2.13.0+cu130 (CUDA 13.0), flashinfer 0.6.17, transformers 5.15.0, python 3.12.3
+SGLang image: lmsysorg/sglang:latest @ sha256:f832b5c39559c9caa900b22ad37c76fcce66470676855c42052102c537812f1f
+  sglang 0.5.23, torch 2.14.1+cu130 (CUDA 13.0), flashinfer 0.7.2, transformers 5.19.0, python 3.12.16
+weights: Qwen/Qwen3.8-27B-FP8 @ c3a462cc3d38cf351f3b26cbd763469eeb74ef81 (official block-scaled FP8, 66 safetensors shards)
+peak GPU memory (nvidia-smi memory.used, 2 s sampling): vLLM 40363 MiB, SGLang 44297 MiB
