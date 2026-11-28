@@ -101,6 +101,12 @@ README 另有 InferenceX AgentX 下与 GPU 的对比（同一模型 FP8，按 AW
 
 同一文档称：单个集群每天服务 155 万亿 token，按闲时价格计整体收入为每 GPU 小时 38 美元。README 的 prefill（4 张 SM100）与 decode（64 张 SM100）Pareto 曲线只以图片形式发布（[prefill](https://github.com/deepseek-ai/DeepInfer/blob/main/doc/images/prefill_pareto.png)、[decode](https://github.com/deepseek-ai/DeepInfer/blob/main/doc/images/decode_pareto.png)），这里不转抄数值。
 
+## 3.5 DeepSeek-V4.1-Flash 在 H20-3e / RTX PRO 6000D 上（第三方）
+
+- **H20-3e，SGLang 实验分支，单机 8 卡 4P+4D**：并发 24，61,440 共享前缀 + 4,096 独有输入，500 输出，输出 2,464.90 tok/s，平均 E2E 4.70 s（[LMSYS 博客](https://www.lmsys.org/blog/2026-11-19-deepseek-v41-h20)）。
+- **RTX PRO 6000D（85 GB），vLLM nightly + SM120 补丁，8 卡 TP8**：512K 上下文，并发 32，输出 1,045.6（散文）/ 1,283.5（代码）tok/s，TTFT 约 450 ms（[luqidaxia/deepseekv41_pro6000d_tp8](https://github.com/luqidaxia/deepseekv41_pro6000d_tp8)）。
+- 96 GB H20 未找到公开数据。完整表格、负载说明和配置见 [`hardware/deepseek-v4.1-flash_h20_rtx6000d.md`](hardware/deepseek-v4.1-flash_h20_rtx6000d.md)。
+
 ## 4. 暂无公布数据
 
 | 组合 | 状态 |

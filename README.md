@@ -84,6 +84,7 @@
 | [`docs/practice/vllm-omni.md`](docs/practice/vllm-omni.md) | vLLM-Omni：Qwen3-Omni 三 stage 部署与文本/语音输出 |
 | [`docs/practice/deepinfer.md`](docs/practice/deepinfer.md) | DeepInfer：构建、离线推理与自带基准 |
 | [`docs/PERF_PUBLISHED.md`](docs/PERF_PUBLISHED.md) | 已公布的性能数据，逐条标注官方/第三方、硬件、精度、负载 |
+| [`docs/hardware/deepseek-v4.1-flash_h20_rtx6000d.md`](docs/hardware/deepseek-v4.1-flash_h20_rtx6000d.md) | DeepSeek-V4.1-Flash 在 H20 / H20-3e / RTX PRO 6000D 上的可行性与公开 benchmark |
 | [`docs/BENCH_PLAN.md`](docs/BENCH_PLAN.md) | 建议的实测组合、预估时长与按需成本（逐行审批） |
 | [`docs/results/`](docs/results/) | 实测结果：[Qwen3.8-27B · g6e.xlarge](docs/results/qwen3.8-27b_g6e.md)（✅）及其余各行的占位文档（⏳，[模板](docs/results/TEMPLATE.md)） |
 | [`scripts/`](scripts/) | `launch.py` / `teardown.py`（boto3，自有 Name tag、key、SG）与实例上运行的 `box/*.sh` |
@@ -127,6 +128,7 @@ oss-llm-models-lab/
     ├── SUPPORT_MATRIX.md
     ├── PERF_PUBLISHED.md
     ├── BENCH_PLAN.md
+    ├── hardware/             # 非 AWS 机型（H20、RTX PRO 6000D 等）的可行性与公开数据
     ├── results/              # 实测结果文档 + TEMPLATE.md + 占位文档
     └── practice/
         ├── sglang.md
